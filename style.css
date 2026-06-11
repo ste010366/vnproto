@@ -37,7 +37,7 @@ body {
 .tabs button:hover { color: #fff; }
 .tabs button.attiva { color: #fff; border-bottom-color: #60a5fa; font-weight: 600; }
 
-main { max-width: 1240px; margin: 0 auto; padding: 16px 14px 40px; }
+main { max-width: 1720px; margin: 0 auto; padding: 16px 14px 40px; }
 
 /* ── Caricamento ──────────────────────────────────────────────────── */
 .caricamento { text-align: center; padding: 70px 0; color: #64748b; }
@@ -68,7 +68,9 @@ thead th {
 thead th:first-child, td:first-child { text-align: left; }
 thead th.sortable { cursor: pointer; }
 thead th.sortable:hover { background: #475569; }
-tbody td { padding: 6px 9px; border-bottom: 1px solid #f1f5f9; text-align: right; white-space: nowrap; }
+tbody td { padding: 5px 7px; border-bottom: 1px solid #f1f5f9; text-align: right; white-space: nowrap; }
+/* Celle testo lunghe (es. elenco squadre): tagliate con ellissi, testo completo nel tooltip */
+td.ell { max-width: 250px; overflow: hidden; text-overflow: ellipsis; }
 tbody tr:nth-child(even) { background: #f1f5f9; }
 tbody tr.cliccabile { cursor: pointer; }
 tbody tr.cliccabile:hover { background: #dbeafe; }

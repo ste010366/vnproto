@@ -362,7 +362,7 @@ function renderClassifica(aggiornaRuoli = false) {
     h += `<tr class="cliccabile" data-id="${esc(r.id)}">
       <td class="txt">${esc(labelRuolo(r.ruolo))}</td>
       <td class="txt"><b>${esc(r.nome)}</b></td>
-      <td class="txt">${esc(r.squadre)}</td>
+      <td class="txt ell" title="${esc(r.squadre)}">${esc(r.squadre)}</td>
       <td><b>${fmt1(r.indice)}</b></td>`;
     FOND_CLASSIFICA.forEach(ff => {
       h += cellaEff(r.eff[ff]) + `<td>${r.tot[ff] ? fmtN(r.tot[ff]) : '<span class="na">—</span>'}</td>`;
