@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Prototipo riservato: niente indicizzazione dai motori di ricerca
+     (i dati contengono nomi reali di atleti — tutela concordata). -->
+<meta name="robots" content="noindex, nofollow">
+<title>VolleyNetwork — XLSuiteVolley (prototipo web)</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <span class="logo">🏐</span>
+    <div>
+      <h1>XLSuiteVolley · <span class="vn">VolleyNetwork</span></h1>
+      <div class="sotto" id="metaInfo">caricamento dati…</div>
+    </div>
+  </div>
+  <span class="badge">PROTOTIPO WEB · sola consultazione</span>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button data-tab="classifiche" class="attiva">📊 Classifiche</button>
+  <button data-tab="squadre">🛡️ Scheda squadra</button>
+  <button data-tab="atleti">👤 Atleti</button>
+  <button data-tab="formule">ℹ️ Formule &amp; legenda</button>
+</nav>
+
+<main id="view">
+  <div class="caricamento" id="loader">
+    <div class="palla">🏐</div>
+    <p>Carico il repository VolleyNetwork…<br><small>(prima apertura: ~13 MB, poi tutto in locale)</small></p>
+  </div>
+</main>
+
+<footer class="fondo">
+  XLSuiteVolley · VolleyNetwork — prototipo di consultazione web. I dati restano sul tuo PC: nessun server, nessun invio.
+</footer>
+
+<script src="lib/sql-wasm.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
