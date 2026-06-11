@@ -19,7 +19,10 @@
       <div class="sotto" id="metaInfo">caricamento dati…</div>
     </div>
   </div>
-  <span class="badge">PROTOTIPO WEB · sola consultazione</span>
+  <div class="top-dx">
+    <div class="userbar" id="userbar"></div>
+    <span class="badge">PROTOTIPO WEB · sola consultazione</span>
+  </div>
 </header>
 
 <nav class="tabs" id="tabs">
@@ -40,7 +43,13 @@
   XLSuiteVolley · VolleyNetwork — prototipo di consultazione web. I dati restano sul tuo PC: nessun server, nessun invio.
 </footer>
 
+<!-- Overlay di accesso società (Fase 4): popolato da app.js -->
+<div class="auth-overlay" id="authOverlay" hidden></div>
+
 <script src="lib/sql-wasm.js"></script>
+<!-- Supabase JS: usato SOLO per il login società (Auth) e la lettura del
+     bucket privato vn. La demo pubblica vnproto funziona anche senza. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="app.js"></script>
 </body>
 </html>

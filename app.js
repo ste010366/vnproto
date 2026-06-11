@@ -30,29 +30,87 @@ let clipSeq = 0;     // id univoci per i clipPath SVG
 /* ── Avvio ─────────────────────────────────────────────────────────── */
 let FONTE = 'file locale';   // da dove arrivano i dati (locale o Supabase)
 
+/* ── Accesso società (Fase 4): Supabase Auth + membership ───────────────
+   La pagina resta una DEMO PUBBLICA (vnproto) per default; il login è un di
+   più che, via RLS sul bucket privato vn (migrazione 0005), mostra i dati
+   della PROPRIA società. PROGETTO_URL e ANON sono pubblici (l'anon non dà
+   accesso al DB: tabelle protette da RLS) — gli stessi del client desktop. */
+const SB_URL  = 'https://tptaihactzorfyleqwsf.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwdGFpaGFjdHpvcmZ5bGVxd3NmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NjI1MDUsImV4cCI6MjA5NjQzODUwNX0.WpJbQyZ-bIbEWN_ztku3zmDsaDWL6viVA451PsRRWho';
+let sb = null;          // client supabase-js (creato solo se la libreria c'è)
+let sessione = null;    // sessione Auth corrente (o null)
+let mieSocieta = [];    // [{id, nome, ruolo}] società dell'utente loggato
+let socAttiva = null;   // società scelta → legge vn/<id>/vn_web.db
+let SQL = null;         // motore sql.js, inizializzato una sola volta
+
 /* Carica i byte del DB: prima dal cloud se vn_config.json indica un remoteDb
    (pubblicato con Pubblica-Supabase.ps1), altrimenti dal file locale. */
 async function caricaDbBytes() {
+  const params = new URLSearchParams(location.search);
+
+  // 0) Sessione società (Fase 4): utente autenticato + società scelta →
+  //    lettura DIRETTA dal bucket privato vn. La RLS di storage.objects
+  //    (migrazione 0005) autorizza solo se l'utente ha membership attiva per
+  //    questa società: nessun signed URL, basta il JWT conservato in `sb`.
+  if (sb && socAttiva) {
+    const path = socAttiva.id + '/vn_web.db';
+    const { data, error } = await sb.storage.from('vn').download(path);
+    if (error || !data)
+      throw new Error('Dati della società non disponibili (' +
+        (error && error.message ? error.message : 'accesso negato') +
+        '). La società potrebbe non aver ancora pubblicato i dati dal programma.');
+    FONTE = '🔒 ' + (socAttiva.nome || 'società');
+    return await data.arrayBuffer();
+  }
+
+  // 1) Override esplicito ?db=<url firmato>: verifica una pubblicazione DI
+  //    SOCIETÀ. È il "download_url" che la Edge Function pubblica-vn restituisce
+  //    (bucket privato vn/<societa_id>/vn_web.db, link firmato a tempo).
+  const dbDiretto = params.get('db');
+  if (dbDiretto) {
+    const r = await fetch(dbDiretto, { cache: 'no-store' });
+    if (r.ok) { FONTE = '☁️ società (link firmato)'; return r.arrayBuffer(); }
+    throw new Error('Link dati non valido o scaduto (?db).');
+  }
+
+  // 2) Società specifica ?soc=<id>: con bucket privato servirà il login
+  //    (Auth + membership, in arrivo). Per ora si appoggia a remoteBase di
+  //    vn_config.json, se presente: <remoteBase>/<id>/vn_web.db.
+  const soc = params.get('soc');
   try {
     const cfg = await fetch('vn_config.json', { cache: 'no-store' })
       .then(r => r.ok ? r.json() : null).catch(() => null);
+    if (soc && cfg && cfg.remoteBase) {
+      const url = cfg.remoteBase.replace(/\/+$/, '') + '/' + encodeURIComponent(soc) + '/vn_web.db';
+      const r = await fetch(url, { cache: 'no-store' });
+      if (r.ok) { FONTE = '☁️ società ' + soc; return r.arrayBuffer(); }
+    }
+    // 3) Comportamento storico: repository VN demo (bucket pubblico vnproto).
     if (cfg && cfg.remoteDb) {
       const url = cfg.remoteDb + (cfg.remoteDb.includes('?') ? '&' : '?') + 'v=' + encodeURIComponent(cfg.pubblicato || '');
       const r = await fetch(url, { cache: 'no-store' });
       if (r.ok) { FONTE = '☁️ Supabase' + (cfg.pubblicato ? ' (' + cfg.pubblicato + ')' : ''); return r.arrayBuffer(); }
     }
   } catch (e) { /* offline o bucket non raggiungibile → fallback locale */ }
+
+  // 4) Fallback: file locale accanto alla pagina.
   const r2 = await fetch('vn_web.db');
   if (!r2.ok) throw new Error('vn_web.db non trovato: esegui prima l\'export (tile "Esporta per il web" o --export-vn-web)');
   return r2.arrayBuffer();
 }
 
-window.addEventListener('DOMContentLoaded', async () => {
+/* Carica il DB (demo o società) e popola le viste. Richiamabile a ogni cambio
+   di fonte: login, scelta società, logout — senza ri-bindare i tab. */
+async function caricaDati() {
+  const view = document.getElementById('view');
+  view.innerHTML = '<div class="caricamento"><div class="palla">🏐</div>' +
+    '<p>Carico i dati VolleyNetwork…</p></div>';
   try {
-    const SQL = await initSqlJs({ locateFile: f => 'lib/' + f });
+    if (!SQL) SQL = await initSqlJs({ locateFile: f => 'lib/' + f });
     const buf = await caricaDbBytes();
     db = new SQL.Database(new Uint8Array(buf));
 
+    EFF = {}; POS = {}; META = {}; catStagList = [];   // azzerati a ogni ricarico
     q("SELECT Fondamentale f, COALESCE(EffettiVincenti,'') v, COALESCE(EffettiPerdenti,'') p, COALESCE(Formula,'') fo FROM TBEfficienza")
       .forEach(r => EFF[r.f] = { v: r.v, p: r.p, formula: r.fo });
     q("SELECT Fondamentale f, COALESCE(EffettiPositivi,'') p, COALESCE(Formula,'') fo FROM TBPositivita")
@@ -66,14 +124,190 @@ window.addEventListener('DOMContentLoaded', async () => {
       (META.vn_data_version ? ` · dati VN v${META.vn_data_version}` : '') +
       (META.generato_il ? ` · aggiornati al ${META.generato_il}` : '') +
       ` · fonte: ${FONTE}`;
-
-    document.querySelectorAll('#tabs button').forEach(b =>
-      b.addEventListener('click', () => mostraTab(b.dataset.tab)));
     mostraTab('classifiche');
   } catch (e) {
-    document.getElementById('view').innerHTML =
+    view.innerHTML =
       `<div class="nota">⚠️ ${esc(e.message)}<br>Apri la pagina con <b>Avvia-Prototipo.cmd</b> (serve un piccolo server locale: il browser non legge i file direttamente).</div>`;
   }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   ACCESSO SOCIETÀ — Supabase Auth (codice OTP via email) + membership
+   La demo pubblica vnproto resta accessibile senza login; chi accede vede
+   invece i dati della propria società dal bucket privato vn (RLS, 0005).
+   ════════════════════════════════════════════════════════════════════ */
+function initAuth() {
+  if (window.supabase && SB_ANON) {
+    try { sb = window.supabase.createClient(SB_URL, SB_ANON); }
+    catch (e) { sb = null; }
+  }
+}
+
+async function caricaMieSocieta() {
+  mieSocieta = [];
+  if (!sb) return;
+  try {
+    const { data, error } = await sb
+      .from('membership')
+      .select('societa_id, ruolo, societa(nome)')
+      .eq('stato', 'attiva');           // RLS limita già a utente_id = auth.uid()
+    if (error) throw error;
+    mieSocieta = (data || []).map(r => ({
+      id: r.societa_id,
+      nome: (r.societa && r.societa.nome) || r.societa_id,
+      ruolo: r.ruolo
+    })).sort((a, b) => a.nome.localeCompare(b.nome, 'it'));
+  } catch (e) { mieSocieta = []; }
+}
+
+function aggiornaUserbar() {
+  const bar = document.getElementById('userbar');
+  if (!bar) return;
+  if (!sb) { bar.innerHTML = ''; return; }   // libreria non caricata → solo demo
+  if (!sessione) {
+    bar.innerHTML = '<button class="btn-auth" id="btnAccedi">🔐 Accedi (società)</button>';
+    document.getElementById('btnAccedi').onclick = apriLogin;
+    return;
+  }
+  const email = (sessione.user && sessione.user.email) || '';
+  let h = `<span class="ub-user" title="${esc(email)}">👤 ${esc(email)}</span>`;
+  if (mieSocieta.length > 1) {
+    h += `<select class="ub-soc" id="ubSoc" title="Cambia società">` +
+      mieSocieta.map(s => `<option value="${esc(s.id)}" ${socAttiva && s.id === socAttiva.id ? 'selected' : ''}>${esc(s.nome)}</option>`).join('') +
+      `</select>`;
+  } else if (socAttiva) {
+    h += `<span class="ub-soc-fissa">🔒 ${esc(socAttiva.nome)}</span>`;
+  } else {
+    h += '<span class="ub-soc-fissa ub-warn" title="Il tuo utente non è collegato ad alcuna società">⚠ nessuna società</span>';
+  }
+  h += '<button class="btn-auth" id="btnEsci">Esci</button>';
+  bar.innerHTML = h;
+  const sel = document.getElementById('ubSoc');
+  if (sel) sel.onchange = e => selezionaSocieta(e.target.value);
+  document.getElementById('btnEsci').onclick = esci;
+}
+
+async function selezionaSocieta(id) {
+  socAttiva = mieSocieta.find(s => s.id === id) || null;
+  aggiornaUserbar();
+  await caricaDati();
+}
+
+async function esci() {
+  try { if (sb) await sb.auth.signOut(); } catch (e) { /* ignora */ }
+  sessione = null; socAttiva = null; mieSocieta = [];
+  aggiornaUserbar();
+  await caricaDati();      // torna alla demo pubblica
+}
+
+/* ── Overlay login a due passi: email → codice OTP ─────────────────── */
+function apriLogin() {
+  const ov = document.getElementById('authOverlay');
+  if (!ov) return;
+  ov.hidden = false;
+  ov.innerHTML =
+    '<div class="auth-card">' +
+      '<button class="auth-x" id="authX" title="Chiudi">✕</button>' +
+      '<h2>🔐 Accesso società</h2>' +
+      '<p class="auth-sub">Riservato agli utenti abilitati dalla propria società. ' +
+      'Inserisci l\'email: riceverai un <b>link per entrare</b> (apri l\'email e clicca «Accedi»).</p>' +
+      '<div id="authBody"></div>' +
+      '<div class="auth-msg" id="authMsg"></div>' +
+    '</div>';
+  document.getElementById('authX').onclick = chiudiLogin;
+  ov.onclick = e => { if (e.target === ov) chiudiLogin(); };
+  stepEmail();
+}
+function chiudiLogin() {
+  const ov = document.getElementById('authOverlay');
+  if (ov) { ov.hidden = true; ov.innerHTML = ''; }
+}
+function authMsg(t, err) {
+  const m = document.getElementById('authMsg');
+  if (m) { m.textContent = t || ''; m.className = 'auth-msg' + (err ? ' err' : ''); }
+}
+function stepEmail() {
+  document.getElementById('authBody').innerHTML =
+    '<label class="auth-l">Email' +
+    '<input type="email" id="authEmail" placeholder="nome@societa.it" autocomplete="email"></label>' +
+    '<button class="btn-auth primario" id="authSend">Invia link di accesso</button>';
+  const inp = document.getElementById('authEmail');
+  const send = document.getElementById('authSend');
+  inp.onkeydown = e => { if (e.key === 'Enter') send.click(); };
+  send.onclick = async () => {
+    const email = inp.value.trim().toLowerCase();
+    if (!email || email.indexOf('@') < 1) { authMsg('Inserisci un indirizzo email valido.', true); return; }
+    send.disabled = true; authMsg('Invio del link in corso…');
+    try { await inviaMagicLink(email); stepInviato(email); }
+    catch (e) { authMsg(traduciAuthErr(e), true); send.disabled = false; }
+  };
+  inp.focus();
+}
+function stepInviato(email) {
+  document.getElementById('authBody').innerHTML =
+    `<p class="auth-sub">Ho inviato un'email a <b>${esc(email)}</b>.<br>Apri il messaggio e clicca <b>«Accedi»</b>: tornerai qui già autenticato (controlla anche lo spam; può metterci un minuto).</p>` +
+    '<button class="btn-auth primario" id="authOk">Ho capito</button>' +
+    '<button class="btn-auth link" id="authBack">← usa un\'altra email</button>';
+  document.getElementById('authOk').onclick = chiudiLogin;
+  document.getElementById('authBack').onclick = stepEmail;
+}
+async function inviaMagicLink(email) {
+  // Magic link: l'utente clicca il link nell'email e RIENTRA su questa pagina
+  // già autenticato — supabase-js cattura la sessione dal fragment URL e scatta
+  // onAuthStateChange. shouldCreateUser:false → solo utenti abilitati dal gestore.
+  // emailRedirectTo = questa stessa pagina (va aggiunta agli URL di redirect Auth).
+  const redirect = location.origin + location.pathname;
+  const { error } = await sb.auth.signInWithOtp({
+    email, options: { shouldCreateUser: false, emailRedirectTo: redirect }
+  });
+  if (error) throw error;
+}
+function traduciAuthErr(e) {
+  const s = ((e && e.message) || String(e)).toLowerCase();
+  if (s.indexOf('not allowed') >= 0 || s.indexOf('signups') >= 0)
+    return 'Email non abilitata. Chiedi al gestore di registrare il tuo indirizzo.';
+  if (s.indexOf('expired') >= 0) return 'Codice scaduto: richiedi un nuovo codice.';
+  if (s.indexOf('invalid') >= 0 || s.indexOf('token') >= 0)
+    return 'Codice errato o scaduto. Riprova, oppure richiedi un nuovo codice.';
+  if (s.indexOf('rate') >= 0 || s.indexOf('too many') >= 0)
+    return 'Troppi tentativi: attendi qualche minuto e riprova.';
+  return 'Errore di accesso: ' + ((e && e.message) || e);
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  // tab: bind una sola volta (i dati vengono ricaricati senza ri-bindare)
+  document.querySelectorAll('#tabs button').forEach(b =>
+    b.addEventListener('click', () => mostraTab(b.dataset.tab)));
+
+  initAuth();
+  if (sb) {
+    try {
+      const { data } = await sb.auth.getSession();
+      sessione = (data && data.session) || null;
+      if (sessione) {
+        await caricaMieSocieta();
+        if (mieSocieta.length) socAttiva = mieSocieta[0];
+      }
+      sb.auth.onAuthStateChange(async (evt, s) => {
+        sessione = s;
+        if (!s) { socAttiva = null; mieSocieta = []; aggiornaUserbar(); return; }
+        // ritorno dal magic link: se non ho ancora una società attiva, carico
+        // le membership e mostro i dati della società senza bisogno di ricaricare.
+        if (evt === 'SIGNED_IN' && !socAttiva) {
+          await caricaMieSocieta();
+          if (mieSocieta.length) socAttiva = mieSocieta[0];
+          aggiornaUserbar();
+          await caricaDati();
+          if (!mieSocieta.length)
+            setTimeout(() => alert('Accesso eseguito, ma il tuo utente non è collegato a nessuna società. Contatta il gestore.'), 50);
+          return;
+        }
+        aggiornaUserbar();
+      });
+    } catch (e) { /* auth non disponibile → solo demo */ }
+  }
+  aggiornaUserbar();
+  await caricaDati();
 });
 
 /* ── Helper DB / formato ───────────────────────────────────────────── */
