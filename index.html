@@ -8,6 +8,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>VolleyNetwork — XLSuiteVolley (prototipo web)</title>
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="promo.css">
 </head>
 <body>
 
@@ -41,6 +42,9 @@
 
 <footer class="fondo">
   XLSuiteVolley · VolleyNetwork — prototipo di consultazione web. I dati restano sul tuo PC: nessun server, nessun invio.
+  <br>
+  <a class="fondo-link" href="#" onclick="if(window.XLSVPromo){XLSVPromo.apri();}return false;">▶ Rivedi la presentazione</a>
+  · <a class="fondo-link" href="prodotto.html">Scopri la suite XLSuiteVolley</a>
 </footer>
 
 <!-- Overlay di accesso società (Fase 4): popolato da app.js -->
@@ -51,5 +55,8 @@
      bucket privato vn. La demo pubblica vnproto funziona anche senza. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="app.js"></script>
+<!-- Popup promozionale (video-intro + CTA verso prodotto.html). Indipendente
+     da app.js: si auto-mostra all'apertura, salvo login società o "non mostrare più". -->
+<script src="promo.js"></script>
 </body>
 </html>

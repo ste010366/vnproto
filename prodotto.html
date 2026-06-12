@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Coerente col prototipo: niente indicizzazione finché il sito è in test.
+     Questa pagina NON contiene dati di atleti: quando il prodotto sarà
+     pubblico, si può rimuovere il noindex per farla trovare su Google. -->
+<meta name="robots" content="noindex, nofollow">
+<title>XLSuiteVolley — La suite per lo scout e l'analisi della pallavolo</title>
+<meta name="description" content="Scout in tempo reale, analisi statistica, montaggio video automatico e il database VolleyNetwork. Tutto in un'unica suite per allenatori e società di pallavolo.">
+<style>
+  :root{
+    --bg:#0b1220; --bg2:#0f1a2e; --card:#111c30; --line:#1e2d45;
+    --txt:#e6edf8; --mut:#9fb2cc; --blu:#3b82f6; --blu2:#60a5fa;
+    --cta:#2563eb; --cta-h:#1d4ed8; --amber:#f59e0b; --green:#22c55e;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--txt);line-height:1.5;}
+  a{color:inherit;}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px;}
+
+  /* Topbar */
+  .nav{position:sticky;top:0;z-index:10;background:rgba(11,18,32,.86);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);}
+  .nav .wrap{display:flex;align-items:center;justify-content:space-between;height:58px;}
+  .nav .logo{font-weight:800;font-size:18px;display:flex;align-items:center;gap:8px;}
+  .nav .logo .vn{color:var(--blu2);}
+  .nav a.back{font-size:13px;color:var(--mut);text-decoration:none;font-weight:600;}
+  .nav a.back:hover{color:#fff;}
+
+  /* Hero */
+  .hero{text-align:center;padding:64px 0 48px;background:radial-gradient(120% 90% at 50% -10%,#16223a,var(--bg) 60%);}
+  .badge{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.6px;color:#cfe0ff;background:rgba(59,130,246,.14);border:1px solid rgba(96,165,250,.35);padding:5px 13px;border-radius:999px;}
+  .hero h1{font-size:clamp(30px,5.4vw,52px);font-weight:900;letter-spacing:-1px;margin:16px 0 10px;}
+  .hero h1 .vn{color:var(--blu2);}
+  .hero p.lead{font-size:clamp(15px,2.2vw,19px);color:var(--mut);max-width:680px;margin:0 auto 26px;}
+  .cta-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+  .btn{font:inherit;font-weight:700;cursor:pointer;border-radius:11px;padding:13px 24px;font-size:15px;border:1px solid transparent;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:.15s;}
+  .btn.primario{background:var(--cta);color:#fff;box-shadow:0 10px 28px rgba(37,99,235,.4);}
+  .btn.primario:hover{background:var(--cta-h);}
+  .btn.ghost{background:transparent;color:var(--txt);border-color:var(--line);}
+  .btn.ghost:hover{border-color:var(--blu);}
+  .hero .mini{margin-top:14px;font-size:12.5px;color:#6f819c;}
+
+  /* Sezioni */
+  section{padding:46px 0;border-top:1px solid var(--line);}
+  .sec-h{text-align:center;margin-bottom:34px;}
+  .sec-h .kick{font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--blu2);}
+  .sec-h h2{font-size:clamp(22px,3.4vw,32px);font-weight:800;margin:8px 0 6px;}
+  .sec-h p{color:var(--mut);max-width:620px;margin:0 auto;}
+
+  /* Flusso 4 step */
+  .flow{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;text-align:center;}
+  .step .n{width:30px;height:30px;border-radius:50%;background:var(--cta);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;}
+  .step .ico{font-size:26px;}
+  .step h4{margin:8px 0 4px;font-size:15px;}
+  .step p{margin:0;font-size:12.5px;color:var(--mut);}
+
+  /* Griglia funzioni */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  .feat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;transition:.15s;}
+  .feat:hover{border-color:var(--blu);transform:translateY(-2px);}
+  .feat .ico{font-size:28px;}
+  .feat h3{margin:10px 0 6px;font-size:16.5px;}
+  .feat p{margin:0;font-size:13.5px;color:var(--mut);}
+
+  /* Prezzi */
+  .prezzi{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-items:stretch;}
+  .plan{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 18px;display:flex;flex-direction:column;}
+  .plan.top{border-color:var(--blu);box-shadow:0 12px 34px rgba(37,99,235,.22);position:relative;}
+  .plan.top::before{content:"Consigliato";position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:var(--cta);color:#fff;font-size:11px;font-weight:800;padding:3px 12px;border-radius:999px;letter-spacing:.4px;}
+  .plan .nome{font-size:14px;font-weight:800;letter-spacing:.3px;color:var(--blu2);text-transform:uppercase;}
+  .plan .prezzo{font-size:34px;font-weight:900;margin:8px 0 2px;}
+  .plan .prezzo small{font-size:13px;font-weight:600;color:var(--mut);}
+  .plan .sub{font-size:12.5px;color:var(--mut);min-height:34px;}
+  .plan ul{list-style:none;margin:14px 0 18px;padding:0;font-size:13px;display:flex;flex-direction:column;gap:7px;}
+  .plan li{padding-left:22px;position:relative;color:#d6e0f0;}
+  .plan li::before{content:"✓";position:absolute;left:0;color:var(--green);font-weight:800;}
+  .plan .btn{margin-top:auto;justify-content:center;}
+  .nota-prezzi{text-align:center;color:#6f819c;font-size:12px;margin-top:18px;}
+
+  /* CTA finale */
+  .cta-final{text-align:center;background:radial-gradient(120% 120% at 50% 0%,#16223a,var(--bg) 70%);}
+  .cta-final h2{font-size:clamp(22px,3.6vw,32px);font-weight:800;margin:0 0 8px;}
+  .cta-final p{color:var(--mut);margin:0 auto 22px;max-width:560px;}
+
+  footer{border-top:1px solid var(--line);padding:26px 0;text-align:center;color:#6f819c;font-size:12.5px;}
+
+  @media(max-width:860px){.flow{grid-template-columns:repeat(2,1fr);}.grid{grid-template-columns:repeat(2,1fr);}.prezzi{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:560px){.grid,.prezzi,.flow{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap">
+    <span class="logo">🏐 XLSuite<span class="vn">Volley</span></span>
+    <a class="back" href="index.html">← VolleyNetwork</a>
+  </div>
+</nav>
+
+<!-- HERO ─────────────────────────────────────────────────────────── -->
+<header class="hero">
+  <div class="wrap">
+    <span class="badge">SCOUT · ANALISI · VIDEO · VOLLEYNETWORK</span>
+    <h1>La pallavolo entra<br>nell'era del <span class="vn">dato</span></h1>
+    <p class="lead">XLSuiteVolley è la suite completa per allenatori e società: rileva le azioni in tempo reale,
+      analizza ogni fondamentale, monta i video degli highlight e confronta i tuoi atleti con il database nazionale VolleyNetwork.</p>
+    <div class="cta-row">
+      <a class="btn primario" href="mailto:info@xlsuitevolley.it?subject=XLSuiteVolley%20-%20Richiesta%20demo&body=Ciao,%20vorrei%20provare%20XLSuiteVolley%20per%20la%20mia%20squadra.">Richiedi una demo</a>
+      <a class="btn ghost" href="index.html">Esplora il VolleyNetwork</a>
+    </div>
+    <div class="mini">Prova del database VolleyNetwork già online · Versione desktop per Windows</div>
+  </div>
+</header>
+
+<!-- FLUSSO ───────────────────────────────────────────────────────── -->
+<section>
+  <div class="wrap">
+    <div class="sec-h">
+      <div class="kick">Un'unica suite</div>
+      <h2>Dal palmo di mano al report, senza cambiare strumento</h2>
+      <p>Tutto il ciclo di lavoro dell'allenatore in un solo programma.</p>
+    </div>
+    <div class="flow">
+      <div class="step"><div class="n">1</div><div class="ico">⚡</div><h4>Rileva</h4><p>Scout live con campo interattivo, oppure importa i file DataVolley (.dvw).</p></div>
+      <div class="step"><div class="n">2</div><div class="ico">📊</div><h4>Analizza</h4><p>Efficienza, positività, rotazioni e modelli prestazionali per ogni squadra.</p></div>
+      <div class="step"><div class="n">3</div><div class="ico">🎬</div><h4>Monta</h4><p>Highlight video automatici delle azioni scelte, con title card e clip in sequenza.</p></div>
+      <div class="step"><div class="n">4</div><div class="ico">🌐</div><h4>Condividi</h4><p>Statistiche live via browser e il database condiviso VolleyNetwork.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- FUNZIONI ─────────────────────────────────────────────────────── -->
+<section>
+  <div class="wrap">
+    <div class="sec-h">
+      <div class="kick">Funzioni</div>
+      <h2>Tutto quello che serve per vincere di analisi</h2>
+      <p>Le stesse funzioni usate dai professionisti, pensate anche per il volley di club e giovanile.</p>
+    </div>
+    <div class="grid">
+      <div class="feat"><div class="ico">⚡</div><h3>Rilevazione live</h3><p>Campo interattivo a schermo intero, punteggio e codici rapidi: lo scout è pronto mentre la partita scorre.</p></div>
+      <div class="feat"><div class="ico">📥</div><h3>Import DataVolley</h3><p>Carica i file .dvw esistenti: formazioni, atleti e azioni entrano nel database senza riscrivere nulla.</p></div>
+      <div class="feat"><div class="ico">🎯</div><h3>Profilo atleta</h3><p>Radar dei fondamentali e coni d'attacco: efficienza e distribuzione spaziale di ogni giocatore a colpo d'occhio.</p></div>
+      <div class="feat"><div class="ico">🎬</div><h3>Montaggio video</h3><p>Seleziona le azioni e la suite genera il filmato: clip concatenate, title card, esportazione in MP4.</p></div>
+      <div class="feat"><div class="ico">📊</div><h3>Studio &amp; modelli</h3><p>Griglie rotazione × zona × esito, statistiche per fondamentale e modelli prestazionali di confronto.</p></div>
+      <div class="feat"><div class="ico">🏆</div><h3>Classifiche VolleyNetwork</h3><p>Ranking nazionale per fondamentale con indice bayesiano: confronta i tuoi atleti con tutto il database.</p></div>
+      <div class="feat"><div class="ico">📱</div><h3>Statistiche live web</h3><p>Condividi i numeri della partita in tempo reale: un link e chiunque li vede dallo smartphone.</p></div>
+      <div class="feat"><div class="ico">📄</div><h3>Report Excel &amp; PDF</h3><p>Relazioni complete e formattate, pronte da stampare o inviare allo staff in pochi minuti.</p></div>
+      <div class="feat"><div class="ico">🔄</div><h3>Video sincronizzato</h3><p>Rivedi e correggi gli scout mentre guardi il video: azioni e filmato sempre allineati.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- PREZZI ───────────────────────────────────────────────────────── -->
+<section>
+  <div class="wrap">
+    <div class="sec-h">
+      <div class="kick">Prezzi</div>
+      <h2>Un piano per ogni realtà</h2>
+      <p>Licenze a stagione: il volley ragiona a stagioni, e così anche XLSuiteVolley.</p>
+    </div>
+    <div class="prezzi">
+      <div class="plan">
+        <div class="nome">Web Free</div>
+        <div class="prezzo">0€</div>
+        <div class="sub">Per iniziare a esplorare il VolleyNetwork.</div>
+        <ul>
+          <li>Classifiche e ranking VolleyNetwork</li>
+          <li>Schede squadra di base</li>
+          <li>Consultazione da browser</li>
+        </ul>
+        <a class="btn ghost" href="index.html">Apri il VolleyNetwork</a>
+      </div>
+      <div class="plan top">
+        <div class="nome">Società</div>
+        <div class="prezzo">249€ <small>/stagione</small></div>
+        <div class="sub">Desktop completo + dashboard web per lo staff.</div>
+        <ul>
+          <li>1 postazione desktop completa</li>
+          <li>Dashboard web fino a 5 utenti</li>
+          <li>Scout, analisi, video e report</li>
+          <li>Pubblicazione dati VolleyNetwork</li>
+        </ul>
+        <a class="btn primario" href="mailto:info@xlsuitevolley.it?subject=XLSuiteVolley%20Societa%20249">Richiedi attivazione</a>
+      </div>
+      <div class="plan">
+        <div class="nome">Società Pro</div>
+        <div class="prezzo">449€ <small>/stagione</small></div>
+        <div class="sub">Per chi fa scouting avversari sul serio.</div>
+        <ul>
+          <li>Tutto del piano Società</li>
+          <li>VolleyNetwork completo + dossier avversari</li>
+          <li>2ª postazione desktop</li>
+          <li>Utenti web illimitati</li>
+        </ul>
+        <a class="btn ghost" href="mailto:info@xlsuitevolley.it?subject=XLSuiteVolley%20Pro%20449">Richiedi attivazione</a>
+      </div>
+      <div class="plan">
+        <div class="nome">Freelance</div>
+        <div class="prezzo">179€ <small>/stagione</small></div>
+        <div class="sub">Per lo scoutman che lavora con più società.</div>
+        <ul>
+          <li>Licenza multi-società</li>
+          <li>+79€/stagione per società con dashboard</li>
+          <li>Identità professionale indipendente</li>
+        </ul>
+        <a class="btn ghost" href="mailto:info@xlsuitevolley.it?subject=XLSuiteVolley%20Freelance%20179">Parliamone</a>
+      </div>
+    </div>
+    <p class="nota-prezzi">Prezzi indicativi di lancio, IVA esclusa — in fase di definizione. Postazione desktop extra 99€/stagione. Prova gratuita 30 giorni in arrivo.</p>
+  </div>
+</section>
+
+<!-- CTA FINALE ───────────────────────────────────────────────────── -->
+<section class="cta-final">
+  <div class="wrap">
+    <h2>Pronto a vedere XLSuiteVolley sui tuoi dati?</h2>
+    <p>Prenota una demo: ti mostriamo come preparare la prossima partita in 30 minuti, scout e video inclusi.</p>
+    <div class="cta-row">
+      <a class="btn primario" href="mailto:info@xlsuitevolley.it?subject=XLSuiteVolley%20-%20Richiesta%20demo">Richiedi una demo gratuita</a>
+      <a class="btn ghost" href="index.html">Torna al VolleyNetwork</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  🏐 XLSuiteVolley · VolleyNetwork — scout e analisi della pallavolo.<br>
+  Software desktop per Windows · Database VolleyNetwork consultabile da browser.
+</footer>
+
+</body>
+</html>

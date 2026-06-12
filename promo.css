@@ -1,0 +1,298 @@
+/* ════════════════════════════════════════════════════════════════════
+   promo.css — Popup promozionale + video-intro animato (XLSuiteVolley)
+   Isolato da style.css/app.js: tutto sotto il prefisso .promo-.
+   Compare all'apertura della pagina VolleyNetwork e presenta la suite.
+   Tema scuro (i video "respirano" su fondo scuro) coerente con la palette
+   slate dell'header. CTA blu come il resto del sito (#2563eb).
+   ════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --promo-bg:     #0b1220;   /* fondo card        */
+  --promo-bg2:    #111c30;   /* fondo palco video */
+  --promo-line:   #1e2d45;
+  --promo-txt:    #e6edf8;
+  --promo-mut:    #9fb2cc;
+  --promo-blu:    #3b82f6;
+  --promo-blu2:   #60a5fa;
+  --promo-cta:    #2563eb;
+  --promo-cta-h:  #1d4ed8;
+  --promo-amber:  #f59e0b;
+  --promo-green:  #22c55e;
+  --promo-lime:   #84cc16;
+  --promo-red:    #ef4444;
+}
+
+/* ── Overlay e card ────────────────────────────────────────────────── */
+.promo-overlay {
+  position: fixed; inset: 0; z-index: 80;
+  background: rgba(6, 12, 24, .78);
+  backdrop-filter: blur(5px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 18px;
+  opacity: 0; animation: promoFadeIn .35s ease forwards;
+}
+.promo-overlay[hidden] { display: none; }
+@keyframes promoFadeIn { to { opacity: 1; } }
+
+.promo-card {
+  position: relative;
+  width: 100%; max-width: 760px;
+  background: var(--promo-bg);
+  color: var(--promo-txt);
+  border: 1px solid var(--promo-line);
+  border-radius: 18px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, .55);
+  overflow: hidden;
+  transform: translateY(14px) scale(.985);
+  animation: promoPop .4s cubic-bezier(.2, .8, .2, 1) .05s forwards;
+}
+@keyframes promoPop { to { transform: translateY(0) scale(1); } }
+
+.promo-x {
+  position: absolute; top: 10px; right: 12px; z-index: 6;
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 1px solid var(--promo-line);
+  background: rgba(10, 18, 34, .6); color: var(--promo-mut);
+  font-size: 16px; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s, color .15s;
+}
+.promo-x:hover { background: #1b2942; color: #fff; }
+
+/* ── Palco video (16:9) ────────────────────────────────────────────── */
+.promo-video {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background:
+    radial-gradient(120% 80% at 50% 0%, #16223a 0%, var(--promo-bg2) 55%, #0a1220 100%);
+  overflow: hidden;
+}
+/* pallina-watermark in filigrana */
+.promo-video::after {
+  content: "🏐"; position: absolute; right: -18px; bottom: -22px;
+  font-size: 150px; opacity: .05; transform: rotate(-12deg); pointer-events: none;
+}
+
+/* ── Scene ─────────────────────────────────────────────────────────── */
+.scene {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; padding: 26px 30px 54px; text-align: center;
+  opacity: 0; visibility: hidden; pointer-events: none;
+}
+.scene.attiva { opacity: 1; visibility: visible; transition: opacity .5s ease; }
+
+.scene-kick {
+  font-size: 11px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase;
+  color: var(--promo-blu2);
+}
+.scene-tit { margin: 0; font-size: clamp(20px, 3.6vw, 30px); font-weight: 800; line-height: 1.12; }
+.scene-tit em { color: var(--promo-blu2); font-style: normal; }
+.scene-sub { margin: 0; font-size: clamp(12px, 1.9vw, 14.5px); color: var(--promo-mut); max-width: 80%; }
+
+/* elementi che entrano quando la scena è attiva */
+.scene.attiva [data-in] { animation: inUp .55s ease both; }
+.scene.attiva [data-in="1"] { animation-delay: .05s; }
+.scene.attiva [data-in="2"] { animation-delay: .22s; }
+.scene.attiva [data-in="3"] { animation-delay: .40s; }
+@keyframes inUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+/* palco grafico di ogni scena */
+.scene-art { position: relative; width: min(420px, 78%); }
+
+/* ── HERO ──────────────────────────────────────────────────────────── */
+.scene--hero .hero-logo { font-size: 56px; animation: heroBounce 1.4s infinite alternate ease-in-out; }
+@keyframes heroBounce { from { transform: translateY(0); } to { transform: translateY(-12px); } }
+.scene--hero .hero-brand { font-size: clamp(26px, 5vw, 40px); font-weight: 900; letter-spacing: -.5px; }
+.scene--hero .hero-brand .vn { color: var(--promo-blu2); }
+.promo-chips { display: flex; gap: 7px; flex-wrap: wrap; justify-content: center; margin-top: 4px; }
+.promo-chip {
+  font-size: 11px; font-weight: 700; color: #cfe0ff;
+  background: rgba(59, 130, 246, .14); border: 1px solid rgba(96, 165, 250, .35);
+  padding: 4px 10px; border-radius: 999px;
+}
+
+/* ── SCENA RILEVAZIONE LIVE (campo + cerchi) ───────────────────────── */
+.court {
+  position: relative; width: 100%; aspect-ratio: 5 / 3;
+  background: linear-gradient(160deg, #0e7c63, #0b6450);
+  border: 2px solid rgba(255, 255, 255, .65); border-radius: 8px;
+  box-shadow: inset 0 0 0 8px rgba(255, 255, 255, .06);
+  overflow: hidden;
+}
+.court .net { position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: #fff; opacity: .85; }
+.court .spot {
+  position: absolute; width: 13%; aspect-ratio: 1; border-radius: 50%;
+  background: rgba(255, 255, 255, .14); border: 2px solid rgba(255, 255, 255, .7);
+  transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800; color: #eafff7;
+}
+.scene.attiva .court .spot { animation: spotPop .4s ease both; }
+.scene.attiva .court .spot:nth-child(2) { animation-delay: .15s; }
+.scene.attiva .court .spot:nth-child(3) { animation-delay: .22s; }
+.scene.attiva .court .spot:nth-child(4) { animation-delay: .29s; }
+.scene.attiva .court .spot:nth-child(5) { animation-delay: .36s; }
+.scene.attiva .court .spot:nth-child(6) { animation-delay: .43s; }
+.scene.attiva .court .spot:nth-child(7) { animation-delay: .50s; }
+@keyframes spotPop { from { opacity: 0; transform: translate(-50%, -50%) scale(.4); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+.court .ball { position: absolute; font-size: 18px; left: 30%; top: 62%; animation: ballMove 2.2s infinite ease-in-out; }
+@keyframes ballMove {
+  0% { left: 28%; top: 64%; } 45% { left: 60%; top: 30%; } 55% { left: 62%; top: 28%; }
+  100% { left: 30%; top: 64%; }
+}
+.scoreboard {
+  position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+  background: rgba(8, 14, 26, .82); border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 7px; padding: 4px 12px; font-weight: 800; font-size: 13px; letter-spacing: 1px;
+  color: #fff; display: flex; gap: 8px;
+}
+.scoreboard .pt { color: var(--promo-green); }
+
+/* ── SCENA PROFILO ATLETA (radar + coni in SVG) ────────────────────── */
+.scene--atleta .scene-art { display: flex; gap: 14px; align-items: center; justify-content: center; flex-wrap: wrap; }
+.radar-box, .coni-box {
+  background: rgba(10, 18, 34, .5); border: 1px solid var(--promo-line);
+  border-radius: 12px; padding: 8px; width: 190px;
+}
+.radar-box svg, .coni-box svg { width: 100%; height: auto; display: block; }
+.scene.attiva .radar-poly { stroke-dasharray: 600; stroke-dashoffset: 600; animation: drawLine 1.1s ease .35s forwards; }
+@keyframes drawLine { to { stroke-dashoffset: 0; } }
+.scene.attiva .cono { opacity: 0; transform-box: fill-box; transform-origin: center; animation: conoIn .5s ease both; }
+.scene.attiva .cono:nth-child(1) { animation-delay: .5s; }
+.scene.attiva .cono:nth-child(2) { animation-delay: .7s; }
+.scene.attiva .cono:nth-child(3) { animation-delay: .9s; }
+@keyframes conoIn { from { opacity: 0; transform: scale(.3); } to { opacity: .85; transform: scale(1); } }
+.art-cap { font-size: 11px; color: var(--promo-mut); margin-top: 4px; text-align: center; }
+
+/* ── SCENA MONTAGGIO VIDEO (clip che si concatenano) ───────────────── */
+.timeline { display: flex; gap: 6px; align-items: center; justify-content: center; width: 100%; }
+.clip {
+  flex: 1; height: 52px; border-radius: 7px; position: relative; overflow: hidden;
+  background: linear-gradient(135deg, #1e3a8a, #2563eb);
+  border: 1px solid rgba(255, 255, 255, .14);
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
+}
+.clip.title { background: linear-gradient(135deg, #0b1220, #1e293b); font-size: 11px; font-weight: 800; color: #fff; }
+.scene.attiva .clip { animation: clipIn .45s ease both; }
+.scene.attiva .clip:nth-child(1) { animation-delay: .1s; }
+.scene.attiva .clip:nth-child(2) { animation-delay: .3s; }
+.scene.attiva .clip:nth-child(3) { animation-delay: .5s; }
+.scene.attiva .clip:nth-child(4) { animation-delay: .7s; }
+@keyframes clipIn { from { opacity: 0; transform: translateX(-14px) scale(.9); } to { opacity: 1; transform: none; } }
+.clip .play { position: absolute; }
+.render-bar {
+  margin-top: 12px; height: 8px; width: 100%; border-radius: 999px;
+  background: rgba(255, 255, 255, .1); overflow: hidden;
+}
+.scene.attiva .render-bar > i {
+  display: block; height: 100%; width: 0; border-radius: 999px;
+  background: linear-gradient(90deg, var(--promo-blu), var(--promo-green));
+  animation: render 1.8s ease .4s forwards;
+}
+@keyframes render { to { width: 100%; } }
+
+/* ── SCENA CLASSIFICHE (righe in cascata) ──────────────────────────── */
+.rank { width: 100%; border-collapse: collapse; font-size: 12px; }
+.rank th { background: #1e293b; color: #fff; padding: 6px 8px; text-align: left; font-size: 11px; }
+.rank th.n, .rank td.n { text-align: right; }
+.rank td { padding: 6px 8px; border-bottom: 1px solid var(--promo-line); }
+.rank tbody tr { background: rgba(255, 255, 255, .015); }
+.scene.attiva .rank tbody tr { animation: rowIn .4s ease both; }
+.scene.attiva .rank tbody tr:nth-child(1) { animation-delay: .15s; }
+.scene.attiva .rank tbody tr:nth-child(2) { animation-delay: .30s; }
+.scene.attiva .rank tbody tr:nth-child(3) { animation-delay: .45s; }
+.scene.attiva .rank tbody tr:nth-child(4) { animation-delay: .60s; }
+@keyframes rowIn { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+.rank .idx { color: var(--promo-amber); font-weight: 800; }
+.rank .val { color: var(--promo-green); font-weight: 800; }
+
+/* ── SCENA STUDIO/EXPORT (griglia → PDF) ───────────────────────────── */
+.grid-mini { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; width: 100%; }
+.grid-mini i { height: 22px; border-radius: 4px; background: #1e293b; }
+.scene.attiva .grid-mini i { animation: cellIn .5s ease both; }
+.grid-mini i.g { background: var(--promo-green); }
+.grid-mini i.y { background: var(--promo-amber); }
+.grid-mini i.r { background: var(--promo-red); }
+.grid-mini i.b { background: var(--promo-blu); }
+@keyframes cellIn { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
+.pdf-badge {
+  display: inline-flex; align-items: center; gap: 7px; margin-top: 10px;
+  background: rgba(239, 68, 68, .12); border: 1px solid rgba(239, 68, 68, .4);
+  color: #fecaca; font-weight: 700; font-size: 12px; padding: 6px 12px; border-radius: 8px;
+}
+
+/* ── Barra di avanzamento + segmenti scena ─────────────────────────── */
+.promo-progress {
+  position: absolute; left: 14px; right: 14px; bottom: 12px;
+  display: flex; gap: 5px; z-index: 5;
+}
+.promo-seg { flex: 1; height: 4px; border-radius: 999px; background: rgba(255, 255, 255, .16); overflow: hidden; cursor: pointer; }
+.promo-seg > i { display: block; height: 100%; width: 0; background: var(--promo-blu2); border-radius: 999px; }
+.promo-seg.done > i { width: 100%; }
+.promo-seg.cur > i { animation: segFill var(--seg-dur, 3.8s) linear forwards; }
+@keyframes segFill { from { width: 0; } to { width: 100%; } }
+
+/* pausa: congela il riempimento */
+.promo-video.paused .promo-seg.cur > i { animation-play-state: paused; }
+
+.promo-skip {
+  position: absolute; bottom: 22px; right: 16px; z-index: 6;
+  font-size: 11.5px; font-weight: 600; color: var(--promo-mut);
+  background: rgba(10, 18, 34, .55); border: 1px solid var(--promo-line);
+  border-radius: 999px; padding: 5px 12px; cursor: pointer;
+}
+.promo-skip:hover { color: #fff; border-color: var(--promo-blu); }
+.promo-pause {
+  position: absolute; bottom: 22px; left: 16px; z-index: 6;
+  width: 30px; height: 30px; border-radius: 50%;
+  background: rgba(10, 18, 34, .55); border: 1px solid var(--promo-line);
+  color: #fff; cursor: pointer; font-size: 13px;
+}
+.promo-pause:hover { border-color: var(--promo-blu); }
+
+/* ── Blocco CTA (sotto il video) ───────────────────────────────────── */
+.promo-cta { padding: 18px 24px 20px; text-align: center; }
+.promo-cta h2 { margin: 0 0 4px; font-size: 20px; font-weight: 800; }
+.promo-cta p { margin: 0 0 14px; color: var(--promo-mut); font-size: 13.5px; }
+.promo-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.promo-btn {
+  font: inherit; font-weight: 700; cursor: pointer; border-radius: 10px;
+  padding: 11px 20px; font-size: 14px; border: 1px solid transparent;
+  text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+  transition: background .15s, border-color .15s, transform .1s;
+}
+.promo-btn:active { transform: translateY(1px); }
+.promo-btn.primario { background: var(--promo-cta); color: #fff; box-shadow: 0 8px 22px rgba(37, 99, 235, .4); }
+.promo-btn.primario:hover { background: var(--promo-cta-h); }
+.promo-btn.ghost { background: transparent; color: var(--promo-txt); border-color: var(--promo-line); }
+.promo-btn.ghost:hover { border-color: var(--promo-blu); color: #fff; }
+.promo-foot { margin-top: 12px; font-size: 11px; color: #6f819c; }
+.promo-foot label { cursor: pointer; }
+.promo-foot input { vertical-align: middle; margin-right: 5px; }
+
+/* ── Responsive (molti arrivi da social = mobile) ──────────────────── */
+@media (max-width: 560px) {
+  .promo-overlay { padding: 10px; align-items: center; }
+  .promo-card { max-width: none; }
+  /* 16:9 è troppo basso sul telefono: alzo il palco così le scene entrano */
+  .promo-video { aspect-ratio: 4 / 5; }
+  .scene { padding: 20px 16px 48px; gap: 9px; }
+  .scene-tit { font-size: 21px; }
+  .scene-sub { max-width: 96%; }
+  .scene-art { width: 90%; }
+  .radar-box, .coni-box { width: 46%; min-width: 0; padding: 6px; }
+  .promo-cta { padding: 15px 18px 18px; }
+  .promo-cta h2 { font-size: 18px; }
+}
+
+/* link discreti aggiunti nel footer della pagina dati (index.html) */
+.fondo-link { color: #2563eb; text-decoration: none; font-weight: 600; }
+.fondo-link:hover { text-decoration: underline; }
+
+/* riduzione movimento per chi lo preferisce */
+@media (prefers-reduced-motion: reduce) {
+  .promo-overlay, .promo-card, .scene.attiva [data-in],
+  .scene.attiva .clip, .scene.attiva .rank tbody tr, .scene.attiva .court .spot,
+  .hero-logo, .court .ball { animation: none !important; }
+  .promo-seg.cur > i { width: 100%; animation: none; }
+}
