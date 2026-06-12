@@ -247,7 +247,7 @@ function stepCodice(email) {
   document.getElementById('authBody').innerHTML =
     `<p class="auth-sub">Ho inviato un codice di accesso a <b>${esc(email)}</b>.<br>Inseriscilo qui sotto per entrare (controlla anche lo spam; può metterci un minuto).</p>` +
     '<label class="auth-l">Codice di accesso' +
-    '<input type="text" id="authCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"></label>' +
+    '<input type="text" id="authCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="codice ricevuto via email"></label>' +
     '<button class="btn-auth primario" id="authVerify">Entra</button>' +
     '<button class="btn-auth link" id="authResend">Invia un nuovo codice</button>' +
     '<button class="btn-auth link" id="authBack">← usa un\'altra email</button>';
