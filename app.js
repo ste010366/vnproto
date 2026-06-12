@@ -256,7 +256,7 @@ function stepCodice(email) {
   inp.onkeydown = e => { if (e.key === 'Enter') verify.click(); };
   verify.onclick = async () => {
     const code = inp.value.trim();
-    if (!/^\d{6}$/.test(code)) { authMsg('Inserisci il codice a 6 cifre ricevuto via email.', true); return; }
+    if (!/^\d{6,10}$/.test(code)) { authMsg('Inserisci il codice ricevuto via email (solo cifre).', true); return; }
     verify.disabled = true; authMsg('Verifica del codice in corso…');
     try { await verificaCodice(email, code); authMsg('Accesso eseguito.'); chiudiLogin(); }
     catch (e) { authMsg(traduciAuthErr(e), true); verify.disabled = false; }
