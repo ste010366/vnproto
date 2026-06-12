@@ -210,7 +210,7 @@ function apriLogin() {
       '<button class="auth-x" id="authX" title="Chiudi">✕</button>' +
       '<h2>🔐 Accesso società</h2>' +
       '<p class="auth-sub">Riservato agli utenti abilitati dalla propria società. ' +
-      'Inserisci l\'email: riceverai un <b>link per entrare</b> (apri l\'email e clicca «Accedi»).</p>' +
+      'Inserisci l\'email: riceverai un <b>codice di accesso</b> da inserire qui.</p>' +
       '<div id="authBody"></div>' +
       '<div class="auth-msg" id="authMsg"></div>' +
     '</div>';
@@ -230,36 +230,59 @@ function stepEmail() {
   document.getElementById('authBody').innerHTML =
     '<label class="auth-l">Email' +
     '<input type="email" id="authEmail" placeholder="nome@societa.it" autocomplete="email"></label>' +
-    '<button class="btn-auth primario" id="authSend">Invia link di accesso</button>';
+    '<button class="btn-auth primario" id="authSend">Invia codice di accesso</button>';
   const inp = document.getElementById('authEmail');
   const send = document.getElementById('authSend');
   inp.onkeydown = e => { if (e.key === 'Enter') send.click(); };
   send.onclick = async () => {
     const email = inp.value.trim().toLowerCase();
     if (!email || email.indexOf('@') < 1) { authMsg('Inserisci un indirizzo email valido.', true); return; }
-    send.disabled = true; authMsg('Invio del link in corso…');
-    try { await inviaMagicLink(email); stepInviato(email); }
+    send.disabled = true; authMsg('Invio del codice in corso…');
+    try { await inviaCodice(email); stepCodice(email); }
     catch (e) { authMsg(traduciAuthErr(e), true); send.disabled = false; }
   };
   inp.focus();
 }
-function stepInviato(email) {
+function stepCodice(email) {
   document.getElementById('authBody').innerHTML =
-    `<p class="auth-sub">Ho inviato un'email a <b>${esc(email)}</b>.<br>Apri il messaggio e clicca <b>«Accedi»</b>: tornerai qui già autenticato (controlla anche lo spam; può metterci un minuto).</p>` +
-    '<button class="btn-auth primario" id="authOk">Ho capito</button>' +
+    `<p class="auth-sub">Ho inviato un codice di accesso a <b>${esc(email)}</b>.<br>Inseriscilo qui sotto per entrare (controlla anche lo spam; può metterci un minuto).</p>` +
+    '<label class="auth-l">Codice di accesso' +
+    '<input type="text" id="authCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"></label>' +
+    '<button class="btn-auth primario" id="authVerify">Entra</button>' +
+    '<button class="btn-auth link" id="authResend">Invia un nuovo codice</button>' +
     '<button class="btn-auth link" id="authBack">← usa un\'altra email</button>';
-  document.getElementById('authOk').onclick = chiudiLogin;
+  const inp = document.getElementById('authCode');
+  const verify = document.getElementById('authVerify');
+  inp.onkeydown = e => { if (e.key === 'Enter') verify.click(); };
+  verify.onclick = async () => {
+    const code = inp.value.trim();
+    if (!/^\d{6}$/.test(code)) { authMsg('Inserisci il codice a 6 cifre ricevuto via email.', true); return; }
+    verify.disabled = true; authMsg('Verifica del codice in corso…');
+    try { await verificaCodice(email, code); authMsg('Accesso eseguito.'); chiudiLogin(); }
+    catch (e) { authMsg(traduciAuthErr(e), true); verify.disabled = false; }
+  };
+  document.getElementById('authResend').onclick = async () => {
+    authMsg('Invio di un nuovo codice…');
+    try { await inviaCodice(email); authMsg('Nuovo codice inviato. Controlla l\'email.'); }
+    catch (e) { authMsg(traduciAuthErr(e), true); }
+  };
   document.getElementById('authBack').onclick = stepEmail;
+  inp.focus();
 }
-async function inviaMagicLink(email) {
-  // Magic link: l'utente clicca il link nell'email e RIENTRA su questa pagina
-  // già autenticato — supabase-js cattura la sessione dal fragment URL e scatta
-  // onAuthStateChange. shouldCreateUser:false → solo utenti abilitati dal gestore.
-  // emailRedirectTo = questa stessa pagina (va aggiunta agli URL di redirect Auth).
-  const redirect = location.origin + location.pathname;
+async function inviaCodice(email) {
+  // OTP via email: signInWithOtp invia il codice {{ .Token }} (template "Magic Link").
+  // shouldCreateUser:false → solo utenti già abilitati dal gestore. Niente
+  // emailRedirectTo: l'utente non torna da un link, digita il codice qui.
   const { error } = await sb.auth.signInWithOtp({
-    email, options: { shouldCreateUser: false, emailRedirectTo: redirect }
+    email, options: { shouldCreateUser: false }
   });
+  if (error) throw error;
+}
+async function verificaCodice(email, token) {
+  // Scambia il codice a 6 cifre con una sessione. Al successo supabase-js imposta
+  // la sessione e scatta onAuthStateChange(SIGNED_IN): membership e dati società
+  // vengono caricati dal bootstrap esistente, senza altre modifiche.
+  const { error } = await sb.auth.verifyOtp({ email, token, type: 'email' });
   if (error) throw error;
 }
 function traduciAuthErr(e) {
@@ -291,8 +314,8 @@ window.addEventListener('DOMContentLoaded', async () => {
       sb.auth.onAuthStateChange(async (evt, s) => {
         sessione = s;
         if (!s) { socAttiva = null; mieSocieta = []; aggiornaUserbar(); return; }
-        // ritorno dal magic link: se non ho ancora una società attiva, carico
-        // le membership e mostro i dati della società senza bisogno di ricaricare.
+        // dopo la verifica del codice OTP: se non ho ancora una società attiva,
+        // carico le membership e mostro i dati senza bisogno di ricaricare.
         if (evt === 'SIGNED_IN' && !socAttiva) {
           await caricaMieSocieta();
           if (mieSocieta.length) socAttiva = mieSocieta[0];
