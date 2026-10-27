@@ -257,7 +257,7 @@
     g.forEach(function (x) {
       var r = el("div", "riga-g");
       r.appendChild(el("div", "n", String(x.num)));
-      var nome = x.cogn + (x.nome ? " " + x.nome.charAt(0) + "." : "") + (x.cap ? "  (C)" : "");
+      var nome = x.cogn + (x.nome ? " " + x.nome : "") + (x.cap ? "  (C)" : "");
       r.appendChild(el("div", "c", nome));
       r.appendChild(el("div", "r", x.lib && !x.ruolo ? "LIBERO" : (RUOLI[x.ruolo] || "")));
       box.appendChild(r);
