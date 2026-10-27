@@ -35,8 +35,15 @@
   .coppia .v { min-width: 100px; } .coppia .v.c { text-align: right; color: #38bdf8; } .coppia .v.o { text-align: left; color: #fbbf24; }
   .coppia .v.meno { opacity: .55; }
   .coppia .sep { opacity: .3; font-size: .6em; }
-  #marchio { margin-top: 14px; display: flex; justify-content: flex-end; align-items: center; gap: 10px; font-size: 22px; opacity: .85; }
-  #marchio img { width: 30px; height: 30px; }
+  .par { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 26px; font-weight: 600; opacity: .9; font-variant-numeric: tabular-nums; }
+  .par .c { color: #38bdf8; } .par .o { color: #fbbf24; } .par .t { opacity: .4; margin: 0 4px; }
+  #migliori { margin-top: 14px; padding-top: 14px; border-top: 2px solid #ffffff22; display: grid; grid-template-columns: 1fr auto 1fr; gap: 32px; align-items: center; }
+  #migliori .centro { font-size: 24px; letter-spacing: 2px; opacity: .7; font-weight: 700; }
+  .mig { font-size: 36px; font-weight: 700; }
+  .mig small { font-size: 26px; font-weight: 400; opacity: .75; margin-left: 10px; }
+  .mig.casa { text-align: right; color: #38bdf8; } .mig.ospite { text-align: left; color: #fbbf24; }
+  #marchio { margin-top: 14px; display: flex; justify-content: flex-end; align-items: center; gap: 16px; font-size: 40px; opacity: .95; }
+  #marchio img { width: 76px; height: 76px; }
 </style>
 </head>
 <body>
@@ -49,6 +56,7 @@
       <div class="squadra ospite"><img id="logoO" alt="" hidden><div class="nome" id="nomeO"></div></div>
     </div>
     <div id="tabella"></div>
+    <div id="migliori"><div class="mig casa" id="migC"></div><div class="centro">MIGLIOR REALIZZATORE</div><div class="mig ospite" id="migO"></div></div>
     <!-- Marchio: fisso -->
     <div id="marchio"><img src="pallone-96.png" alt=""><span>Dati forniti da <b>XLSuiteVolley</b></span></div>
   </div>
@@ -114,12 +122,37 @@
     sets.forEach(function (x) { tab.appendChild(coppia(x.c, x.o, num, true)); });
     tab.appendChild(coppia(totC, totO, num, true));
 
+    // Parziali ai time-out tecnici (8, 16, 21 punti) di ciascun set
+    if (sets.some(function (x) { return x.par && x.par.length; })) {
+      tab.appendChild(el("div", "etichetta", "PARZIALI"));
+      sets.forEach(function (x) {
+        var p = el("div", "par");
+        (x.par || []).forEach(function (t) {
+          var r = el("div");
+          r.appendChild(el("span", "c", String(t[0]))); r.appendChild(el("span", "t", "–")); r.appendChild(el("span", "o", String(t[1])));
+          p.appendChild(r);
+        });
+        tab.appendChild(p);
+      });
+      tab.appendChild(el("div"));
+    }
+
     RIGHE.forEach(function (r) {
       tab.appendChild(el("div", "etichetta", r[0]));
       sets.forEach(function (x) { tab.appendChild(coppia(r[1](x.sq && x.sq.c), r[1](x.sq && x.sq.o), r[2])); });
       tab.appendChild(coppia(r[1](s.tot && s.tot.c), r[1](s.tot && s.tot.o), r[2]));
     });
+    realizzatore($("migC"), s.migliori && s.migliori.c);
+    realizzatore($("migO"), s.migliori && s.migliori.o);
     barra.style.display = "block";
+  }
+
+  // Miglior realizzatore fino a ora: maglia, nome e punti (attacchi + muri + ace)
+  function realizzatore(box, m) {
+    box.textContent = "";
+    if (!m) { box.textContent = "–"; return; }
+    box.appendChild(document.createTextNode(m.num + "  " + (m.nome || "")));
+    box.appendChild(el("small", null, m.pt + " pt (" + m.att + " att · " + m.mu + " muri · " + m.ace + " ace)"));
   }
 
   function logo(id, url) {
