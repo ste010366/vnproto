@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Overlay live</title>
+<!--
+  Overlay delle statistiche live per la trasmissione (vMix / OBS, sorgente "pagina web"): sfondo trasparente,
+  palco fisso 1920x1080 scalato alla finestra. Pagina STATICA: si carica su qualsiasi hosting (es. Aruba).
+  Indirizzo: https://<dominio>/overlay.html?t=<token>   (aggiungere &debug=1 per vedere lo stato del collegamento)
+  Legge lo snapshot dalla funzione pubblica live_overlay di Supabase (chiave pubblica "publishable": è fatta per stare nelle pagine web;
+  senza il token, lungo e casuale, non restituisce nulla). Gli stessi dati servono ai titoli GT di vMix come Data Source JSON.
+-->
+<style>
+  html, body { margin: 0; background: transparent; overflow: hidden; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; color: #fff; }
+  #palco { position: fixed; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: top left; }
+  #debug { position: absolute; left: 12px; top: 8px; font-size: 22px; background: #000a; padding: 4px 10px; display: none; }
+  #barra { position: absolute; left: 120px; right: 120px; bottom: 56px; background: rgba(11,18,32,.93); border-radius: 24px;
+           border: 2px solid #ffffff22; padding: 28px 40px 18px; box-shadow: 0 12px 40px #0008; display: none; }
+  #testa { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 32px; }
+  .squadra { display: flex; align-items: center; gap: 22px; }
+  .squadra.casa { justify-content: flex-end; text-align: right; color: #38bdf8; }
+  .squadra.ospite { justify-content: flex-start; text-align: left; color: #fbbf24; }
+  .squadra .nome { font-size: 46px; font-weight: 700; line-height: 1.1; }
+  .squadra img { height: 110px; max-width: 160px; object-fit: contain; }
+  #setvinti { font-size: 88px; font-weight: 800; letter-spacing: 2px; min-width: 260px; text-align: center; }
+  #setvinti .c { color: #38bdf8; } #setvinti .o { color: #fbbf24; } #setvinti .sep { opacity: .5; margin: 0 18px; }
+  #tabella { margin-top: 22px; display: grid; row-gap: 6px; align-items: center; }
+  .testa-col { text-align: center; font-size: 26px; font-weight: 700; letter-spacing: 2px; opacity: .7; border-bottom: 2px solid #ffffff22; padding-bottom: 6px; }
+  .etichetta { font-size: 26px; font-weight: 700; letter-spacing: 1.5px; opacity: .85; padding: 10px 0; }
+  .coppia { display: flex; justify-content: center; align-items: baseline; gap: 14px; font-size: 44px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .coppia.grande { font-size: 54px; }
+  .coppia .v { min-width: 100px; } .coppia .v.c { text-align: right; color: #38bdf8; } .coppia .v.o { text-align: left; color: #fbbf24; }
+  .coppia .v.meno { opacity: .55; }
+  .coppia .sep { opacity: .3; font-size: .6em; }
+  #marchio { margin-top: 14px; display: flex; justify-content: flex-end; align-items: center; gap: 10px; font-size: 22px; opacity: .85; }
+  #marchio img { width: 30px; height: 30px; }
+</style>
+</head>
+<body>
+<div id="palco">
+  <div id="debug"></div>
+  <div id="barra">
+    <div id="testa">
+      <div class="squadra casa"><div class="nome" id="nomeC"></div><img id="logoC" alt="" hidden></div>
+      <div id="setvinti"><span class="c" id="vintiC">0</span><span class="sep">–</span><span class="o" id="vintiO">0</span></div>
+      <div class="squadra ospite"><img id="logoO" alt="" hidden><div class="nome" id="nomeO"></div></div>
+    </div>
+    <div id="tabella"></div>
+    <!-- Marchio: fisso -->
+    <div id="marchio"><img src="pallone-96.png" alt=""><span>Dati forniti da <b>XLSuiteVolley</b></span></div>
+  </div>
+</div>
+<script>
+(function () {
+  var SUPABASE_URL = "https://soxkjdnwjhhtebrhzqjf.supabase.co";
+  var SUPABASE_KEY = "sb_publishable_mrWIGr8KCc_pgDgmR_U37A_3IWNLS1M";
+  var PERIODO_MS = 3000;
+
+  var q = new URLSearchParams(location.search);
+  var token = (q.get("t") || "").trim().toLowerCase();
+  var debug = q.has("debug");
+  var $ = function (id) { return document.getElementById(id); };
+  var palco = $("palco"), barra = $("barra"), dbg = $("debug"), tab = $("tabella");
+  if (debug) dbg.style.display = "block";
+  function stato(t) { dbg.textContent = t; }
+
+  function adatta() {
+    palco.style.transform = "scale(" + Math.min(innerWidth / 1920, innerHeight / 1080) + ")";
+  }
+  addEventListener("resize", adatta); adatta();
+
+  var perc = function (v) { return v == null || isNaN(v) ? "–" : Math.round(v * 100) + "%"; };
+  var num = function (v) { return v == null ? "–" : String(v); };
+  var RIGHE = [
+    ["ATTACCO %", function (l) { return l && l.A && l.A.pp; }, perc],
+    ["RICEZIONE POSITIVA %", function (l) { return l && l.R && l.R.pp; }, perc],
+    ["MURI", function (l) { return l && l.B && l.B.pt; }, num]
+  ];
+
+  function el(tag, cls, testo) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (testo != null) e.textContent = testo;
+    return e;
+  }
+  function coppia(c, o, f, grande) {
+    var d = el("div", "coppia" + (grande ? " grande" : ""));
+    var migliorC = c != null && o != null && c > o, migliorO = c != null && o != null && o > c;
+    d.appendChild(el("span", "v c" + (migliorC || c === o ? "" : " meno"), f(c)));
+    d.appendChild(el("span", "sep", "|"));
+    d.appendChild(el("span", "v o" + (migliorO || c === o ? "" : " meno"), f(o)));
+    return d;
+  }
+
+  function disegna(s) {
+    var sets = (s.sets || []).slice().sort(function (a, b) { return a.n - b.n; });
+    if (!sets.length) { barra.style.display = "none"; return; }
+    $("nomeC").textContent = (s.casa && s.casa.nome) || "";
+    $("nomeO").textContent = (s.ospite && s.ospite.nome) || "";
+    $("vintiC").textContent = (s.setVinti && s.setVinti.c) || 0;
+    $("vintiO").textContent = (s.setVinti && s.setVinti.o) || 0;
+
+    tab.style.gridTemplateColumns = "300px repeat(" + (sets.length + 1) + ", 1fr)";
+    tab.textContent = "";
+    var totC = 0, totO = 0;
+    tab.appendChild(el("div"));
+    sets.forEach(function (x) { tab.appendChild(el("div", "testa-col", "SET " + x.n + (x.inCorso ? " ●" : ""))); totC += x.c; totO += x.o; });
+    tab.appendChild(el("div", "testa-col", "TOTALE"));
+
+    tab.appendChild(el("div", "etichetta", "PUNTI"));
+    sets.forEach(function (x) { tab.appendChild(coppia(x.c, x.o, num, true)); });
+    tab.appendChild(coppia(totC, totO, num, true));
+
+    RIGHE.forEach(function (r) {
+      tab.appendChild(el("div", "etichetta", r[0]));
+      sets.forEach(function (x) { tab.appendChild(coppia(r[1](x.sq && x.sq.c), r[1](x.sq && x.sq.o), r[2])); });
+      tab.appendChild(coppia(r[1](s.tot && s.tot.c), r[1](s.tot && s.tot.o), r[2]));
+    });
+    barra.style.display = "block";
+  }
+
+  function logo(id, url) {
+    var i = $(id);
+    if (url) { if (i.src !== url) i.src = url; i.hidden = false; } else { i.hidden = true; }
+  }
+
+  var loghiCaricati = false, haLoghi = false;
+  function giro() {
+    if (!/^[a-f0-9]{64}$/.test(token)) { stato("link non valido (manca ?t=…)"); return; }
+    var chiediLoghi = haLoghi && !loghiCaricati;
+    fetch(SUPABASE_URL + "/rest/v1/rpc/live_overlay", {
+      method: "POST", cache: "no-store",
+      headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY },
+      body: JSON.stringify({ p_token: token, p_loghi: chiediLoghi })
+    }).then(function (r) {
+      if (!r.ok) throw new Error("errore " + r.status);
+      return r.json();
+    }).then(function (d) {
+      if (!d) { stato("link non valido o chiuso"); return; }
+      if (d.snapshot && Object.keys(d.snapshot).length) disegna(d.snapshot);
+      haLoghi = !!d.ha_loghi;
+      if (d.loghi) { logo("logoC", d.loghi.casa); logo("logoO", d.loghi.ospite); loghiCaricati = true; }
+      stato("ok · " + new Date().toLocaleTimeString("it-IT"));
+    }).catch(function (e) {
+      stato("rete non raggiungibile (si riprova): " + e.message);
+    }).then(function () { setTimeout(giro, PERIODO_MS); });
+  }
+  giro();
+})();
+</script>
+</body>
+</html>
