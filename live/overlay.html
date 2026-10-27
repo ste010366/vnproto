@@ -35,6 +35,17 @@
   .coppia .v { min-width: 100px; } .coppia .v.c { text-align: right; color: #38bdf8; } .coppia .v.o { text-align: left; color: #fbbf24; }
   .coppia .v.meno { opacity: .55; }
   .coppia .sep { opacity: .3; font-size: .6em; }
+  #roster { position: absolute; left: 120px; right: 120px; bottom: 56px; background: rgba(11,18,32,.93); border-radius: 24px;
+            border: 2px solid #ffffff22; padding: 28px 40px 18px; box-shadow: 0 12px 40px #0008; display: none; }
+  #rtesta { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 32px; }
+  #rtesta .centro { text-align: center; font-size: 30px; letter-spacing: 3px; font-weight: 700; opacity: .8; min-width: 300px; }
+  #rcorpo { margin-top: 22px; display: grid; grid-template-columns: 1fr 1fr; gap: 64px; }
+  .campo { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .zona { text-align: center; background: #ffffff10; border-radius: 16px; padding: 10px 6px; min-height: 112px; }
+  .zona .n { font-size: 58px; font-weight: 800; line-height: 1.05; }
+  .zona .cg { font-size: 26px; font-weight: 600; }
+  .blocco.casa .n, .blocco.casa .lab { color: #38bdf8; } .blocco.ospite .n, .blocco.ospite .lab { color: #fbbf24; }
+  .riga { font-size: 25px; margin-top: 10px; opacity: .92; } .riga .lab { font-weight: 700; letter-spacing: 2px; margin-right: 10px; }
   .par { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 26px; font-weight: 600; opacity: .9; font-variant-numeric: tabular-nums; }
   .par .c { color: #38bdf8; } .par .o { color: #fbbf24; } .par .t { opacity: .4; margin: 0 4px; }
   #migliori { margin-top: 14px; padding-top: 14px; border-top: 2px solid #ffffff22; display: grid; grid-template-columns: 1fr auto 1fr; gap: 32px; align-items: center; }
@@ -42,13 +53,23 @@
   .mig { font-size: 36px; font-weight: 700; }
   .mig small { font-size: 26px; font-weight: 400; opacity: .75; margin-left: 10px; }
   .mig.casa { text-align: right; color: #38bdf8; } .mig.ospite { text-align: left; color: #fbbf24; }
-  #marchio { margin-top: 14px; display: flex; justify-content: flex-end; align-items: center; gap: 16px; font-size: 40px; opacity: .95; }
-  #marchio img { width: 76px; height: 76px; }
+  #marchio, #marchioR { margin-top: 14px; display: flex; justify-content: flex-end; align-items: center; gap: 16px; font-size: 40px; opacity: .95; }
+  #marchio img, #marchioR img { width: 76px; height: 76px; }
 </style>
 </head>
 <body>
 <div id="palco">
   <div id="debug"></div>
+  <!-- Vista formazioni (?v=roster): squadre in campo a inizio partita/set -->
+  <div id="roster">
+    <div id="rtesta">
+      <div class="squadra casa"><div class="nome" id="rNomeC"></div><img id="rlogoC" alt="" hidden></div>
+      <div class="centro" id="rSet">FORMAZIONI</div>
+      <div class="squadra ospite"><img id="rlogoO" alt="" hidden><div class="nome" id="rNomeO"></div></div>
+    </div>
+    <div id="rcorpo"><div class="blocco casa" id="rBloccoC"></div><div class="blocco ospite" id="rBloccoO"></div></div>
+    <div id="marchioR"><img src="pallone-96.png" alt=""><span>Dati forniti da <b>XLSuiteVolley</b></span></div>
+  </div>
   <div id="barra">
     <div id="testa">
       <div class="squadra casa"><div class="nome" id="nomeC"></div><img id="logoC" alt="" hidden></div>
@@ -155,6 +176,56 @@
     box.appendChild(el("small", null, m.pt + " pt (" + m.att + " att · " + m.mu + " muri · " + m.ace + " ace)"));
   }
 
+  // ---- Vista formazioni: ?v=roster (&set=N per la formazione di un altro set; di base il set 1) ----
+  var vistaRoster = q.get("v") === "roster";
+  var setRoster = parseInt(q.get("set") || "1", 10) || 1;
+  var rost = $("roster");
+
+  function riga(box, etichetta, giocatori) {
+    if (!giocatori.length) return;
+    var d = el("div", "riga");
+    d.appendChild(el("span", "lab", etichetta));
+    d.appendChild(document.createTextNode(giocatori.map(function (g) { return g.num + " " + g.cogn + (g.cap ? " (C)" : ""); }).join("  ·  ")));
+    box.appendChild(d);
+  }
+
+  function blocco(box, sq, zone) {
+    box.textContent = "";
+    var g = (sq && sq.g) || [], per = {}, inCampo = {};
+    g.forEach(function (x) { per[x.num] = x; });
+    if (zone) {
+      var campo = el("div", "campo");
+      [4, 3, 2, 5, 6, 1].forEach(function (z) {            // riga d'attacco 4-3-2, riga di difesa 5-6-1
+        var n = zone[z - 1], p = per[n];
+        inCampo[n] = 1;
+        var c = el("div", "zona");
+        c.appendChild(el("div", "n", String(n)));
+        c.appendChild(el("div", "cg", p ? p.cogn + (p.cap ? " (C)" : "") : ""));
+        campo.appendChild(c);
+      });
+      box.appendChild(campo);
+    }
+    riga(box, "LIBERO", g.filter(function (x) { return x.lib && !inCampo[x.num]; }));
+    riga(box, zone ? "PANCHINA" : "DISTINTA", g.filter(function (x) { return !x.lib && !inCampo[x.num]; }));
+    if (sq && sq.all) {
+      var s = el("div", "riga");
+      s.appendChild(el("span", "lab", "ALLENATORE"));
+      s.appendChild(document.createTextNode(sq.all + (sq.ass ? "   ·   2° " + sq.ass : "")));
+      box.appendChild(s);
+    }
+  }
+
+  function disegnaRoster(s) {
+    if (!s.roster) { rost.style.display = "none"; return; }
+    $("rNomeC").textContent = (s.casa && s.casa.nome) || "";
+    $("rNomeO").textContent = (s.ospite && s.ospite.nome) || "";
+    $("rSet").textContent = "FORMAZIONI · SET " + setRoster;
+    var f = s.formazioni && s.formazioni[String(setRoster)];
+    blocco($("rBloccoC"), s.roster.c, f && f.c);
+    blocco($("rBloccoO"), s.roster.o, f && f.o);
+    rost.style.display = "block";
+  }
+
   function logo(id, url) {
     var i = $(id);
     if (url) { if (i.src !== url) i.src = url; i.hidden = false; } else { i.hidden = true; }
@@ -173,9 +244,13 @@
       return r.json();
     }).then(function (d) {
       if (!d) { stato("link non valido o chiuso"); return; }
-      if (d.snapshot && Object.keys(d.snapshot).length) disegna(d.snapshot);
+      if (d.snapshot && Object.keys(d.snapshot).length) { if (vistaRoster) disegnaRoster(d.snapshot); else disegna(d.snapshot); }
       haLoghi = !!d.ha_loghi;
-      if (d.loghi) { logo("logoC", d.loghi.casa); logo("logoO", d.loghi.ospite); loghiCaricati = true; }
+      if (d.loghi) {
+        logo("logoC", d.loghi.casa); logo("logoO", d.loghi.ospite);
+        logo("rlogoC", d.loghi.casa); logo("rlogoO", d.loghi.ospite);
+        loghiCaricati = true;
+      }
       stato("ok · " + new Date().toLocaleTimeString("it-IT"));
     }).catch(function (e) {
       stato("rete non raggiungibile (si riprova): " + e.message);
