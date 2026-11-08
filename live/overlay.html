@@ -35,6 +35,14 @@
   .coppia .v { min-width: 100px; } .coppia .v.c { text-align: right; color: #38bdf8; } .coppia .v.o { text-align: left; color: #fbbf24; }
   .coppia .v.meno { opacity: .55; }
   .coppia .sep { opacity: .3; font-size: .6em; }
+  /* 4+ set: colonne più strette, così il TOTALE resta dentro il riquadro */
+  #tabella.stretto .coppia { font-size: 40px; gap: 8px; }
+  #tabella.stretto .coppia.grande { font-size: 46px; }
+  #tabella.stretto .coppia .v { min-width: 0; }
+  #tabella.stretto .testa-col { font-size: 22px; letter-spacing: 1px; }
+  #tabella.stretto .etichetta { font-size: 22px; letter-spacing: 1px; }
+  #tabella.stretto .par { font-size: 22px; }
+  #tabella > * { min-width: 0; }
   #roster { position: absolute; left: 120px; right: 120px; bottom: 56px; background: rgba(11,18,32,.93); border-radius: 24px;
             border: 2px solid #ffffff22; padding: 28px 40px 18px; box-shadow: 0 12px 40px #0008; display: none; }
   #rtesta { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 32px; }
@@ -64,6 +72,26 @@
   .mig { font-size: 36px; font-weight: 700; }
   .mig small { font-size: 26px; font-weight: 400; opacity: .75; margin-left: 10px; }
   .mig.casa { text-align: right; color: #38bdf8; } .mig.ospite { text-align: left; color: #fbbf24; }
+  #giocatori { position: absolute; left: 80px; right: 80px; top: 50px; bottom: 50px; background: rgba(11,18,32,.95); border-radius: 24px;
+               border: 2px solid #ffffff22; padding: 24px 40px 14px; box-shadow: 0 12px 40px #0008; display: none; flex-direction: column; }
+  #gtesta { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 32px; }
+  #gtesta .centro { text-align: center; font-size: 34px; letter-spacing: 3px; font-weight: 800; opacity: .85; min-width: 300px; }
+  #gcorpo { margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 56px; flex: 1; min-height: 0; }
+  .gcol { display: flex; flex-direction: column; min-height: 0; }
+  .gcol.casa { color: #38bdf8; } .gcol.ospite { color: #fbbf24; }
+  .g-riga { display: grid; grid-template-columns: 70px 1fr 190px 190px 90px; align-items: baseline; padding: 0 6px; border-bottom: 1px solid #ffffff18; font-variant-numeric: tabular-nums; }
+  .g-riga > div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .g-riga .n { font-weight: 800; text-align: right; padding-right: 16px; }
+  .g-riga .p, .g-riga .k { text-align: right; font-weight: 800; }
+  .g-riga .p small { font-size: .62em; font-weight: 700; color: #fff; opacity: .9; margin-left: 8px; }
+  .g-riga .k { opacity: .85; }
+  .g-riga.corpo { color: #fff; }
+  .g-riga.testa { font-size: 22px; letter-spacing: 1.5px; font-weight: 700; opacity: .7; border-bottom: 2px solid #ffffff44; padding-bottom: 4px; }
+  .g-riga.testa > div { text-align: right; } .g-riga.testa > div:nth-child(2) { text-align: left; }
+  .g-riga.corpo .n { color: inherit; }
+  .gcol.casa .g-riga.corpo .n { color: #38bdf8; } .gcol.ospite .g-riga.corpo .n { color: #fbbf24; }
+  #marchioG { margin-top: 8px; display: flex; justify-content: flex-end; align-items: center; gap: 16px; font-size: 30px; opacity: .95; }
+  #marchioG img { width: 52px; height: 52px; }
   #marchio, #marchioR { margin-top: 14px; display: flex; justify-content: flex-end; align-items: center; gap: 16px; font-size: 40px; opacity: .95; }
   #marchio img, #marchioR img { width: 76px; height: 76px; }
 </style>
@@ -90,6 +118,16 @@
     </div>
     <div id="ecorpo"><div class="blocco casa" id="eBloccoC"></div><div class="blocco ospite" id="eBloccoO"></div></div>
     <div id="marchioE"><img src="pallone-96.png" alt=""><span>Dati forniti da <b>XLSuiteVolley</b></span></div>
+  </div>
+  <!-- Vista giocatori (?v=giocatori): per ogni giocatore attacco % e n. attacchi, ricezione % e n. ricezioni, punti fatti -->
+  <div id="giocatori">
+    <div id="gtesta">
+      <div class="squadra casa"><div class="nome" id="gNomeC"></div><img id="glogoC" alt="" hidden></div>
+      <div class="centro">GIOCATORI</div>
+      <div class="squadra ospite"><img id="glogoO" alt="" hidden><div class="nome" id="gNomeO"></div></div>
+    </div>
+    <div id="gcorpo"><div class="gcol casa" id="gColC"></div><div class="gcol ospite" id="gColO"></div></div>
+    <div id="marchioG"><img src="pallone-96.png" alt=""><span>Dati forniti da <b>XLSuiteVolley</b></span></div>
   </div>
   <div id="barra">
     <div id="testa">
@@ -153,7 +191,9 @@
     $("vintiC").textContent = (s.setVinti && s.setVinti.c) || 0;
     $("vintiO").textContent = (s.setVinti && s.setVinti.o) || 0;
 
-    tab.style.gridTemplateColumns = "300px repeat(" + (sets.length + 1) + ", 1fr)";
+    var stretto = sets.length >= 4;
+    tab.className = stretto ? "stretto" : "";
+    tab.style.gridTemplateColumns = (stretto ? "250px" : "300px") + " repeat(" + (sets.length + 1) + ", minmax(0, 1fr))";
     tab.textContent = "";
     var totC = 0, totO = 0;
     tab.appendChild(el("div"));
@@ -279,6 +319,43 @@
     $("elenco").style.display = "block";
   }
 
+  // ---- Vista giocatori: ?v=giocatori ----
+  var vistaGiocatori = q.get("v") === "giocatori";
+
+  function colonnaGiocatori(box, lista) {
+    box.textContent = "";
+    var t = el("div", "g-riga testa");
+    ["N°", "GIOCATORE", "ATTACCO", "RICEZIONE", "PUNTI"].forEach(function (x) { t.appendChild(el("div", null, x)); });
+    box.appendChild(t);
+    var g = lista || [];
+    // Altezza riga adattata al numero di giocatori (max ~14 per squadra) per stare sempre nel palco
+    var altezza = Math.max(38, Math.min(66, Math.floor(760 / Math.max(g.length, 1))));
+    var font = Math.round(altezza * 0.62);
+    g.forEach(function (x) {
+      var r = el("div", "g-riga corpo");
+      r.style.height = altezza + "px"; r.style.fontSize = font + "px";
+      r.appendChild(el("div", "n", String(x.num)));
+      r.appendChild(el("div", "c", x.nome || ""));
+      var a = x.A || {}, rc = x.R || {};
+      [[a, "p"], [rc, "p"]].forEach(function (c) {
+        var d = el("div", "p", c[0].t ? perc(c[0].pp) : "–");
+        if (c[0].t) d.appendChild(el("small", null, String(c[0].t)));
+        r.appendChild(d);
+      });
+      r.appendChild(el("div", "k", String(x.pt != null ? x.pt : 0)));
+      box.appendChild(r);
+    });
+  }
+
+  function disegnaGiocatori(s) {
+    if (!s.giocatori) { $("giocatori").style.display = "none"; return; }
+    $("gNomeC").textContent = (s.casa && s.casa.nome) || "";
+    $("gNomeO").textContent = (s.ospite && s.ospite.nome) || "";
+    colonnaGiocatori($("gColC"), s.giocatori.c);
+    colonnaGiocatori($("gColO"), s.giocatori.o);
+    $("giocatori").style.display = "flex";
+  }
+
   function logo(id, url) {
     var i = $(id);
     if (url) { if (i.src !== url) i.src = url; i.hidden = false; } else { i.hidden = true; }
@@ -297,12 +374,13 @@
       return r.json();
     }).then(function (d) {
       if (!d) { stato("link non valido o chiuso"); return; }
-      if (d.snapshot && Object.keys(d.snapshot).length) { if (vistaElenco) disegnaElenco(d.snapshot); else if (vistaRoster) disegnaRoster(d.snapshot); else disegna(d.snapshot); }
+      if (d.snapshot && Object.keys(d.snapshot).length) { if (vistaGiocatori) disegnaGiocatori(d.snapshot); else if (vistaElenco) disegnaElenco(d.snapshot); else if (vistaRoster) disegnaRoster(d.snapshot); else disegna(d.snapshot); }
       haLoghi = !!d.ha_loghi;
       if (d.loghi) {
         logo("logoC", d.loghi.casa); logo("logoO", d.loghi.ospite);
         logo("rlogoC", d.loghi.casa); logo("rlogoO", d.loghi.ospite);
         logo("elogoC", d.loghi.casa); logo("elogoO", d.loghi.ospite);
+        logo("glogoC", d.loghi.casa); logo("glogoO", d.loghi.ospite);
         loghiCaricati = true;
       }
       stato("ok · " + new Date().toLocaleTimeString("it-IT"));
