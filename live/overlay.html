@@ -85,6 +85,7 @@
   .g-riga .p, .g-riga .k { text-align: right; font-weight: 800; }
   .g-riga .p small { font-size: .62em; font-weight: 700; color: #fff; opacity: .9; margin-left: 8px; }
   .g-riga .k { opacity: .85; }
+  .g-riga .k.top { color: #34d399; opacity: 1; font-size: 1.15em; }
   .g-riga.corpo { color: #fff; }
   .g-riga.testa { font-size: 22px; letter-spacing: 1.5px; font-weight: 700; opacity: .7; border-bottom: 2px solid #ffffff44; padding-bottom: 4px; }
   .g-riga.testa > div { text-align: right; } .g-riga.testa > div:nth-child(2) { text-align: left; }
@@ -331,6 +332,8 @@
     // Altezza riga adattata al numero di giocatori (max ~14 per squadra) per stare sempre nel palco
     var altezza = Math.max(38, Math.min(66, Math.floor(760 / Math.max(g.length, 1))));
     var font = Math.round(altezza * 0.62);
+    var maxPt = 0;
+    g.forEach(function (x) { if (x.pt > maxPt) maxPt = x.pt; });
     g.forEach(function (x) {
       var r = el("div", "g-riga corpo");
       r.style.height = altezza + "px"; r.style.fontSize = font + "px";
@@ -342,7 +345,7 @@
         if (c[0].t) d.appendChild(el("small", null, String(c[0].t)));
         r.appendChild(d);
       });
-      r.appendChild(el("div", "k", x.pt > 0 ? String(x.pt) : ""));
+      r.appendChild(el("div", "k" + (x.pt > 0 && x.pt === maxPt ? " top" : ""), x.pt > 0 ? String(x.pt) : ""));
       box.appendChild(r);
     });
   }
