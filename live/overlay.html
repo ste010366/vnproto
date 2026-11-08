@@ -342,7 +342,7 @@
         if (c[0].t) d.appendChild(el("small", null, String(c[0].t)));
         r.appendChild(d);
       });
-      r.appendChild(el("div", "k", String(x.pt != null ? x.pt : 0)));
+      r.appendChild(el("div", "k", x.pt > 0 ? String(x.pt) : ""));
       box.appendChild(r);
     });
   }
